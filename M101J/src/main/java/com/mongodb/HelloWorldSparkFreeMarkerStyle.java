@@ -9,11 +9,14 @@ import java.util.Map;
 
 import static spark.Spark.get;
 import static spark.Spark.halt;
+import static spark.Spark.port;
 
 public class HelloWorldSparkFreeMarkerStyle {
     public static void main(String[] args) {
         final Configuration configuration = new Configuration();
         configuration.setClassForTemplateLoading(HelloWorldSparkFreeMarkerStyle.class, "/");
+
+        port(14567);
 
         get("/", (req, res) ->
                 getHelloWorldWriter(configuration, "Freemarker")
