@@ -31,7 +31,7 @@ public class HelloWorldSparkFreeMarkerStyle {
         );
     }
 
-    private static StringWriter getHelloWorldWriter(Configuration configuration, String name) {
+    private static Object getHelloWorldWriter(Configuration configuration, String name) {
         StringWriter writer = new StringWriter();
         try {
             Template helloTemplate = configuration.getTemplate("/hello.ftl");
@@ -43,6 +43,5 @@ public class HelloWorldSparkFreeMarkerStyle {
             e.printStackTrace();
         }
         return writer;
-
     }
 }
