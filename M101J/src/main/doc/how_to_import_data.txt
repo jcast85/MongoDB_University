@@ -1,0 +1,1 @@
+mongoimport --host localhost --port 27017 --db m101 --username m101_user --password m101_user --drop -c grades grades.json
