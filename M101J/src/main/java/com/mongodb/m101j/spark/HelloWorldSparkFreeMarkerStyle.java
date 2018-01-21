@@ -1,4 +1,4 @@
-package com.mongodb;
+package com.mongodb.m101j.spark;
 
 import freemarker.template.Configuration;
 import freemarker.template.Template;
@@ -21,14 +21,17 @@ public class HelloWorldSparkFreeMarkerStyle {
         get("/", (req, res) ->
                 getHelloWorldWriter(configuration, "Freemarker")
         );
+        // digit "localhost:14567" on browser
 
         get("/juri", (req, res) ->
                 getHelloWorldWriter(configuration, "Juri")
         );
+        // digit "localhost:14567/juri" on browser
 
         get("/echo/:thing", (req, res) ->
                 getHelloWorldWriter(configuration, req.params(":thing"))
         );
+        // digit "localhost:14567/echo/<something>" on browser
     }
 
     private static Object getHelloWorldWriter(Configuration configuration, String name) {

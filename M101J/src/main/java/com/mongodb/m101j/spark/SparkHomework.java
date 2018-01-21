@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.mongodb;
+package com.mongodb.m101j.spark;
 
 import freemarker.template.Configuration;
 import freemarker.template.Template;
@@ -40,6 +40,7 @@ public class SparkHomework {
         get("/", (request, response) ->
             getHw1_3Writer(configuration)
         );
+        // digit "localhost:4567" on browser
     }
 
     private static Object getHw1_3Writer(Configuration configuration) {

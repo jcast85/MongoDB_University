@@ -1,5 +1,6 @@
-package com.mongodb;
+package com.mongodb.m101j.spark;
 
+import com.mongodb.m101j.spark.HelloWorldSparkFreeMarkerStyle;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 
@@ -20,6 +21,7 @@ public class SparkFormHandling {
         get("/", (req, res) ->
                 getFormWriter(configuration, "Juri", Arrays.asList("apple", "orange", "banana", "peach", "ananas"))
         );
+        // digit "localhost:14567" on browser
 
         post("/favorite_fruit", (req, res) ->
                 postFormResultWriter(req.queryParams("fruit"))
