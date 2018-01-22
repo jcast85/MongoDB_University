@@ -20,6 +20,7 @@ import com.mongodb.ErrorCategory;
 import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 import org.bson.Document;
 import sun.misc.BASE64Encoder;
 
@@ -48,15 +49,20 @@ public class UserDAO {
         // create an object suitable for insertion into the user collection
         // be sure to add username and hashed password to the document. problem instructions
         // will tell you the schema that the documents must follow.
+        Document document = new Document();
+        document.put("_id", username);
+        document.put("password", passwordHash);
 
         if (email != null && !email.equals("")) {
             // XXX WORK HERE
             // if there is an email address specified, add it to the document too.
+            document.put("email", email);
         }
 
         try {
             // XXX WORK HERE
             // insert the document into the user collection here
+            usersCollection.insertOne(document);
             return true;
         } catch (MongoWriteException e) {
             if (e.getError().getCategory().equals(ErrorCategory.DUPLICATE_KEY)) {
@@ -72,6 +78,7 @@ public class UserDAO {
 
         // XXX look in the user collection for a user that has this username
         // assign the result to the user variable.
+        user = usersCollection.find(Filters.eq("_id", username)).first();
 
         if (user == null) {
             System.out.println("User not in database");
