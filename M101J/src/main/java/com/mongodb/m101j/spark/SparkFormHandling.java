@@ -1,6 +1,5 @@
 package com.mongodb.m101j.spark;
 
-import com.mongodb.m101j.spark.HelloWorldSparkFreeMarkerStyle;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 
