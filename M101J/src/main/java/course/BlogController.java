@@ -135,6 +135,41 @@ public class BlogController {
         post("/newpost", (req, res) -> postNewPost(configuration, req, res));
 
         get("/post/:permalink", (req, res) -> getPermalinkPost(configuration, req, res));
+
+        post("/newcomment", (req, res) -> postNewComment(configuration, req, res));
+    }
+
+    private Object postNewComment(Configuration configuration, Request request, Response response) throws TemplateModelException {
+        StringWriter writer = new StringWriter();
+
+        String name = StringEscapeUtils.escapeHtml4(request.queryParams("commentName"));
+        String email = StringEscapeUtils.escapeHtml4(request.queryParams("commentEmail"));
+        String body = StringEscapeUtils.escapeHtml4(request.queryParams("commentBody"));
+        String permalink = request.queryParams("permalink");
+
+        Document post = blogPostDAO.findByPermalink(permalink);
+        if (post == null) {
+            response.redirect("/post_not_found");
+        }
+        // check that comment is good
+        else if (name.equals("") || body.equals("")) {
+            // bounce this back to the user for correction
+            SimpleHash root = new SimpleHash();
+            SimpleHash comment = new SimpleHash();
+
+            comment.put("name", name);
+            comment.put("email", email);
+            comment.put("body", body);
+            root.put("comments", comment);
+            root.put("post", post);
+            root.put("errors", "Post must contain your name and an actual comment");
+
+            processTemplate(writer, configuration, root.toMap(), "entry_template.ftl");
+        } else {
+            blogPostDAO.addPostComment(name, email, body, permalink);
+            response.redirect("/post/" + permalink);
+        }
+        return writer;
     }
 
     private Object postNewPost(Configuration configuration, Request request, Response response) {

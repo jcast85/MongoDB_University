@@ -1,13 +1,16 @@
 package course;
 
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
+import com.mongodb.client.model.Updates;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 public class BlogPostDAO {
@@ -96,5 +99,8 @@ public class BlogPostDAO {
         // - email is optional and may come in NULL. Check for that.
         // - best solution uses an update command to the database and a suitable
         //   operator to append the comment on to any existing list of comments
+        Document post = postsCollection.find(Filters.eq("permalink", permalink)).first();
+        Bson updates = Updates.push("comments", new Document("author", name).append("body", body).append("email", email));
+        postsCollection.updateOne(Filters.eq("_id", post.getObjectId("_id")), updates);
     }
 }
