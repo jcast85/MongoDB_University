@@ -1,9 +1,13 @@
 package course;
 
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Sorts;
 import org.bson.Document;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class BlogPostDAO {
@@ -17,9 +21,11 @@ public class BlogPostDAO {
     public Document findByPermalink(String permalink) {
 
         // XXX HW 3.2,  Work Here
-        Document post = null;
-
-
+        Document filters = new Document();
+        filters.put("permalink", permalink);
+        Document post = postsCollection.find(
+                filters
+        ).first();
 
         return post;
     }
@@ -30,7 +36,7 @@ public class BlogPostDAO {
 
         // XXX HW 3.2,  Work Here
         // Return a list of DBObjects, each one a post from the posts collection
-        List<Document> posts = null;
+        List<Document> posts = postsCollection.find().limit(limit).sort(Sorts.descending("date")).into(new ArrayList<>());
 
         return posts;
     }
@@ -57,7 +63,14 @@ public class BlogPostDAO {
 
         // Build the post object and insert it
         Document post = new Document();
-
+        post.put("permalink", permalink);
+        post.put("author", username);
+        post.put("body", body);
+        post.put("tags", tags);
+        post.put("comments", new ArrayList<>());
+        post.put("date", new Date());
+        post.put("title", title);
+        postsCollection.insertOne(post);
 
         return permalink;
     }

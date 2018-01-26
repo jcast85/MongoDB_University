@@ -33,7 +33,9 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static spark.Spark.*;
 
@@ -47,6 +49,7 @@ public class BlogController {
     private final Configuration cfg;
     private final UserDAO userDAO;
     private final SessionDAO sessionDAO;
+    private final BlogPostDAO blogPostDAO;
 
     public static void main(String[] args) throws IOException {
         if (args.length == 0) {
@@ -62,6 +65,7 @@ public class BlogController {
 
         userDAO = new UserDAO(blogDatabase);
         sessionDAO = new SessionDAO(blogDatabase);
+        blogPostDAO = new BlogPostDAO(blogDatabase);
 
         cfg = createFreemarkerConfiguration();
         port(8082);
@@ -125,6 +129,90 @@ public class BlogController {
 
         // used to process internal errors
         get("/internal_error", (req, res) -> getInternalError(configuration, req, res));
+
+        get("/newpost", (req, res) -> getNewPost(configuration, req, res));
+
+        post("/newpost", (req, res) -> postNewPost(configuration, req, res));
+
+        get("/post/:permalink", (req, res) -> getPermalinkPost(configuration, req, res));
+    }
+
+    private Object postNewPost(Configuration configuration, Request request, Response response) {
+        StringWriter writer = new StringWriter();
+
+        String title = StringEscapeUtils.escapeHtml4(request.queryParams("subject"));
+        String post = StringEscapeUtils.escapeHtml4(request.queryParams("body"));
+        String tags = StringEscapeUtils.escapeHtml4(request.queryParams("tags"));
+
+        String username = sessionDAO.findUserNameBySessionId(getSessionCookie(request));
+
+        if (username == null) {
+            response.redirect("/login");    // only logged in users can post to blog
+        }
+        else if (title.equals("") || post.equals("")) {
+            // redisplay page with errors
+            Map<String, String> root = new HashMap<>();
+            root.put("errors", "post must contain a title and blog entry.");
+            root.put("subject", title);
+            root.put("username", username);
+            root.put("tags", tags);
+            root.put("body", post);
+            processTemplate(writer, configuration, root, "newpost_template.ftl");
+        } else {
+            // extract tags
+            ArrayList<String> tagsArray = extractTags(tags);
+
+            // substitute some <p> for the paragraph breaks
+            post = post.replaceAll("\\r?\\n", "<p>");
+
+            String permalink = blogPostDAO.addPost(title, post, tagsArray, username);
+
+            // now redirect to the blog permalink
+            response.redirect("/post/" + permalink);
+        }
+        return writer;
+    }
+
+    private Object getPermalinkPost(Configuration configuration, Request request, Response response) throws TemplateModelException {
+        StringWriter writer = new StringWriter();
+
+        String permalink = request.params(":permalink");
+
+        System.out.println("/post: get " + permalink);
+
+        Document post = blogPostDAO.findByPermalink(permalink);
+        if (post == null) {
+            response.redirect("/post_not_found");
+        } else {
+            // empty comment to hold new comment in form at bottom of blog entry detail page
+            SimpleHash newComment = new SimpleHash();
+            newComment.put("name", "");
+            newComment.put("email", "");
+            newComment.put("body", "");
+
+            SimpleHash root = new SimpleHash();
+
+            root.put("post", post);
+            root.put("comments", newComment);
+
+            processTemplate(writer, configuration, root.toMap(), "entry_template.ftl");
+        }
+
+
+        return writer;
+    }
+
+    private Object getNewPost(Configuration configuration, Request request, Response response) throws TemplateModelException {
+        StringWriter writer = new StringWriter();
+
+        String username = request.queryParams("username");
+
+        SimpleHash root = new SimpleHash();
+        root.put("username", StringEscapeUtils.escapeHtml4(username));
+
+        processTemplate(writer, configuration, root.toMap(), "newpost_template.ftl");
+
+        return writer;
     }
 
     private Object getInternalError(Configuration configuration, Request req, Response res) throws TemplateModelException {
@@ -133,7 +221,7 @@ public class BlogController {
         SimpleHash root = new SimpleHash();
 
         root.put("error", "System has encountered an error.");
-        processTemplate(writer, configuration, root .toMap(), "error_template.ftl");
+        processTemplate(writer, configuration, root.toMap(), "error_template.ftl");
 
         return writer;
     }
@@ -298,19 +386,35 @@ public class BlogController {
         return writer;
     }
 
-    private Object getBlog(Configuration configuration, Request request, Response response) {
+    private Object getBlog(Configuration configuration, Request request, Response response) throws TemplateModelException {
         String sessionCookie = getSessionCookie(request);
+        String username = null;
         if(sessionCookie != null) {
-            String username = sessionDAO.findUserNameBySessionId(sessionCookie);
+            username = sessionDAO.findUserNameBySessionId(sessionCookie);
         }
+        List<Document> postListByDateDescending = blogPostDAO.findByDateDescending(50);
 
         StringWriter writer = new StringWriter();
 
         // this is where we would normally load up the blog data
         // but this week, we just display a placeholder.
-        HashMap<String, String> root = new HashMap<>();
+        SimpleHash root = new SimpleHash();
+        if(username!=null) {
+            root.put("username", StringEscapeUtils.escapeHtml4(username));
+            root.put("myposts", postListByDateDescending.stream().map(
+                    post -> new HashMap<String, Object>() {{
+                        put("permalink", post.getString("permalink"));
+                        put("title", post.getString("title"));
+                        put("author", post.getString("author"));
+                        put("body", post.getString("body"));
+                        put("date", post.getDate("date"));
+                        put("comments", post.get("comments", List.class));
+                        put("tags", post.get("tags", List.class));
+                    }}
+            ).collect(Collectors.toList()));
+        }
 
-        writer = processTemplate(writer, configuration, root, "/blog_template.ftl");
+        writer = processTemplate(writer, configuration, root.toMap(), "/blog_template.ftl");
 
         return writer;
     }
