@@ -10,7 +10,6 @@ import org.bson.conversions.Bson;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 
 public class BlogPostDAO {
@@ -103,4 +102,5 @@ public class BlogPostDAO {
         Bson updates = Updates.push("comments", new Document("author", name).append("body", body).append("email", email));
         postsCollection.updateOne(Filters.eq("_id", post.getObjectId("_id")), updates);
     }
+
 }
