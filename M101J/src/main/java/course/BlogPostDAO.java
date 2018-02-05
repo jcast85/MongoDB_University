@@ -103,4 +103,13 @@ public class BlogPostDAO {
         postsCollection.updateOne(Filters.eq("_id", post.getObjectId("_id")), updates);
     }
 
+    public List<Document> findByTagDateDescending(String tag) {
+        Document filters = new Document();
+        filters.put("tags", tag);
+        List<Document> posts = postsCollection.find(
+                filters
+        ).into(new ArrayList<>());
+
+        return posts;
+    }
 }

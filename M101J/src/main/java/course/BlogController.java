@@ -137,6 +137,27 @@ public class BlogController {
         get("/post/:permalink", (req, res) -> getPermalinkPost(configuration, req, res));
 
         post("/newcomment", (req, res) -> postNewComment(configuration, req, res));
+
+        get("/tag/:thetag", (req, res) -> getPostByTag(configuration, req, res));
+    }
+
+    private Object getPostByTag(Configuration configuration, Request request, Response response) throws TemplateModelException {
+        StringWriter writer = new StringWriter();
+
+        String username = sessionDAO.findUserNameBySessionId(getSessionCookie(request));
+        SimpleHash root = new SimpleHash();
+
+        String tag = StringEscapeUtils.escapeHtml4(request.params(":thetag"));
+        List<Document> posts = blogPostDAO.findByTagDateDescending(tag);
+
+        root.put("myposts", posts);
+        if (username != null) {
+            root.put("username", username);
+        }
+
+        processTemplate(writer, configuration, root.toMap(), "blog_template.ftl");
+
+        return writer;
     }
 
     private Object postNewComment(Configuration configuration, Request request, Response response) throws TemplateModelException {
