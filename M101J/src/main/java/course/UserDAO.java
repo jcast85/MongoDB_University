@@ -4,8 +4,8 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,12 +27,11 @@ import sun.misc.BASE64Encoder;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Random;
 
 public class UserDAO {
     private final MongoCollection<Document> usersCollection;
-    private Random random = new SecureRandom();
+    private final ThreadLocal<Random> random = new ThreadLocal<>();
 
     public UserDAO(final MongoDatabase blogDatabase) {
         usersCollection = blogDatabase.getCollection("users");
@@ -41,26 +40,26 @@ public class UserDAO {
     // validates that username is unique and insert into db
     public boolean addUser(String username, String password, String email) {
 
-        String passwordHash = makePasswordHash(password, Integer.toString(random.nextInt()));
+        String passwordHash = makePasswordHash(password, Integer.toString(getRandom().nextInt()));
 
         // XXX WORK HERE
         // create an object suitable for insertion into the user collection
         // be sure to add username and hashed password to the document. problem instructions
         // will tell you the schema that the documents must follow.
-        Document document = new Document();
-        document.put("_id", username);
-        document.put("password", passwordHash);
+        Document user = new Document();
+
+        user.append("_id", username).append("password", passwordHash);
 
         if (email != null && !email.equals("")) {
             // XXX WORK HERE
             // if there is an email address specified, add it to the document too.
-            document.put("email", email);
+            user.append("email", email);
         }
 
         try {
             // XXX WORK HERE
             // insert the document into the user collection here
-            usersCollection.insertOne(document);
+            usersCollection.insertOne(user);
             return true;
         } catch (MongoWriteException e) {
             if (e.getError().getCategory().equals(ErrorCategory.DUPLICATE_KEY)) {
@@ -109,5 +108,14 @@ public class UserDAO {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException("UTF-8 unavailable?  Not a chance", e);
         }
+    }
+
+    private Random getRandom() {
+        Random result = random.get();
+        if (result == null) {
+            result = new Random();
+            random.set(result);
+        }
+        return result;
     }
 }
