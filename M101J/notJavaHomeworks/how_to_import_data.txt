@@ -1,1 +1,2 @@
 mongoimport --host localhost --port 27017 --db m101 --username m101_user --password m101_user --drop -c grades grades.json
+mongorestore --port 27017 -d m101 -c images images.json
