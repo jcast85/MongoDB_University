@@ -249,7 +249,7 @@ public class BlogController {
             SimpleHash root = new SimpleHash();
 
             root.put("post", post);
-            root.put("comments", newComment);
+            root.put("comment", newComment);
 
             processTemplate(writer, configuration, root.toMap(), "entry_template.ftl");
         }
