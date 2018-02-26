@@ -139,6 +139,41 @@ public class BlogController {
         post("/newcomment", (req, res) -> postNewComment(configuration, req, res));
 
         get("/tag/:thetag", (req, res) -> getPostByTag(configuration, req, res));
+
+        post("/like", (req, res) -> postLike(configuration, req, res));
+    }
+
+    private Object postLike(Configuration configuration, Request request, Response response) throws TemplateModelException {
+        StringWriter writer = new StringWriter();
+
+        int comment_ordinal = Integer.parseInt(StringEscapeUtils.escapeHtml4(request.queryParams("comment_ordinal")));
+        String permalink = request.queryParams("permalink");
+
+        blogPostDAO.likePost(permalink, comment_ordinal);
+
+        getPostByPermalink(configuration, response, writer, permalink);
+
+        return writer;
+    }
+
+    private void getPostByPermalink(Configuration configuration, Response response, StringWriter writer, String permalink) throws TemplateModelException {
+        Document post = blogPostDAO.findByPermalink(permalink);
+        if (post == null) {
+            response.redirect("/post_not_found");
+        } else {
+            // empty comment to hold new comment in form at bottom of blog entry detail page
+            SimpleHash newComment = new SimpleHash();
+            newComment.put("name", "");
+            newComment.put("email", "");
+            newComment.put("body", "");
+
+            SimpleHash root = new SimpleHash();
+
+            root.put("post", post);
+            root.put("comment", newComment);
+
+            processTemplate(writer, configuration, root.toMap(), "entry_template.ftl");
+        }
     }
 
     private Object getPostByTag(Configuration configuration, Request request, Response response) throws TemplateModelException {
@@ -236,24 +271,7 @@ public class BlogController {
 
         System.out.println("/post: get " + permalink);
 
-        Document post = blogPostDAO.findByPermalink(permalink);
-        if (post == null) {
-            response.redirect("/post_not_found");
-        } else {
-            // empty comment to hold new comment in form at bottom of blog entry detail page
-            SimpleHash newComment = new SimpleHash();
-            newComment.put("name", "");
-            newComment.put("email", "");
-            newComment.put("body", "");
-
-            SimpleHash root = new SimpleHash();
-
-            root.put("post", post);
-            root.put("comment", newComment);
-
-            processTemplate(writer, configuration, root.toMap(), "entry_template.ftl");
-        }
-
+        getPostByPermalink(configuration, response, writer, permalink);
 
         return writer;
     }
@@ -457,18 +475,18 @@ public class BlogController {
         SimpleHash root = new SimpleHash();
         if(username!=null) {
             root.put("username", StringEscapeUtils.escapeHtml4(username));
-            root.put("myposts", postListByDateDescending.stream().map(
-                    post -> new HashMap<String, Object>() {{
-                        put("permalink", post.getString("permalink"));
-                        put("title", post.getString("title"));
-                        put("author", post.getString("author"));
-                        put("body", post.getString("body"));
-                        put("date", post.getDate("date"));
-                        put("comments", post.get("comments", List.class));
-                        put("tags", post.get("tags", List.class));
-                    }}
-            ).collect(Collectors.toList()));
         }
+        root.put("myposts", postListByDateDescending.stream().map(
+                post -> new HashMap<String, Object>() {{
+                    put("permalink", post.getString("permalink"));
+                    put("title", post.getString("title"));
+                    put("author", post.getString("author"));
+                    put("body", post.getString("body"));
+                    put("date", post.getDate("date"));
+                    put("comments", post.get("comments", List.class));
+                    put("tags", post.get("tags", List.class));
+                }}
+        ).collect(Collectors.toList()));
 
         writer = processTemplate(writer, configuration, root.toMap(), "/blog_template.ftl");
 
